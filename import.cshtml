@@ -1,0 +1,92 @@
+﻿@{
+
+
+    var db = Database.Open("EA");
+
+    var category = 1;
+    if (!Request.QueryString["cat"].IsEmpty())
+    {
+        category = int.Parse(Request.QueryString["cat"]);
+    }
+
+    var category_item = db.QuerySingle("select * from EA_categories where id=@0 ", category);
+    if (IsPost)
+    {
+        if (Request.Files["import"].ContentLength > 0)
+        {
+            Request.Files["import"].SaveAs(Server.MapPath("~/") + "temp" + category + ".csv");
+            string data = File.ReadAllText(Server.MapPath("~/") + "temp" + category + ".csv");
+            string[] lines = data.Replace("\r", "").Split('\n');
+            string[] parms = lines[0].Split(',');
+            int[] parms_ids = new int[parms.Length];
+            parms_ids[0] = 0;
+            parms_ids[1] = 0;
+            parms_ids[2] = 0;
+            for (int j = 3; j < parms.Length; j++)
+            {
+                <p>@parms[j]</p>
+                var id = db.QueryValue("select id from EA_category_inputs where category_id=@0 and input_title like @1", category, parms[j]);
+                if (id != null)
+                {
+                    parms_ids[j] = id;
+                }
+                <p>@id</p>
+
+            }
+
+
+
+            for (var k = 1; k < lines.Length; k++)
+            {
+                string[] values = lines[k].Split(',');
+
+                db.Execute("insert into EA_components (code,name,description,category_id) values (@0,@1,@2,@3)", values[0], values[1], values[2], category);
+                var id = db.GetLastInsertId();
+
+
+                for (int j = 3; j < values.Length; j++)
+                {
+                    db.Execute("insert into EA_components_specs (component_id,input_id,input_value,input_value_target) values (@0,@1,@2,@3)", id, parms_ids[j], values[j], values[j]);
+
+                }
+
+
+            }
+
+            File.Delete(Server.MapPath("~/") + "temp" + category + ".csv");
+        }
+
+       
+    }
+}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<body>
+    <div >
+        <h2> @category_item.title import</h2>
+        <form>
+            <select name="cat" onchange="this.form.submit()" >
+                @foreach (var item in db.Query("select * from EA_categories  order by list_order"))
+                {
+                    <option value="@item.id" @if (item.id == category) { <text> selected</text> }>@item.title </option>
+                }
+            </select>
+        </form>
+
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" accept=".csv" name="import"  onchange="importlist(this.form)" />
+        </form>
+
+    </div>
+    <script>
+        function importlist(submitform) {
+            if (confirm("do you want to import the data in this file?")) {
+                submitform.submit();
+            }
+        }
+    </script>
+
+
+</body>
+</html>
+@{ db.Close();}
