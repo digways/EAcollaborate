@@ -1,0 +1,207 @@
+﻿@{
+
+    var db = Database.Open("EA");
+    var category = Request.QueryString["cat"];
+    var cat_info = db.QuerySingle("select * from ea_categories where id=@0", category);
+
+}
+<h1 style="width:100%;">@cat_info.title - الوضع المستهدف</h1>
+<hr />
+
+@foreach (var cat_input in db.Query("select * from ea_category_inputs where category_id=@0 and input_type = 'select'", category))
+{
+    var titles_str = "[";
+    var data_str = "[";
+    <table>
+        <tr>
+            <td style="width:600px;">
+                <canvas id="Chart-@cat_input.id" style="width: 600px; max-width: 600px; display: inline-block; border: 1px solid #808080;"></canvas>
+            </td>
+            <td>
+                <table>
+                    @foreach (var str in cat_input.input_default.Replace("\r", "").Split('\n'))
+                    {
+                        titles_str += "\"" + str + "\",";
+                        var val = db.QueryValue("select count(*) from ea_components_specs where input_value_target like @0 and input_id=@1", str, cat_input.id);
+                        data_str += val + ",";
+                        <tr><td>@str</td><td style="width:200px;">@val</td></tr>
+                    }
+                </table>
+            </td>
+        </tr>
+    </table>
+    titles_str += "]";
+    data_str += "]";
+    titles_str.Replace(",]", "]");
+    data_str.Replace(",]", "]");
+    <text>
+        <script>
+var xValues = @Html.Raw(titles_str);
+var yValues = @Html.Raw(data_str);
+var barColors = [
+    "#b91d47",
+    "#00aba9",
+    "#2b5797",
+    "#e8c3b9",
+    "#1e7145",
+    "#546de5",
+    "#ea8685",
+    "#574b90",
+    "#f19066",
+    "#596275",
+    "#f7d794"
+];
+
+ new Chart("Chart-@cat_input.id", {
+     type: "pie",
+  data: {
+    labels: xValues,
+    datasets: [{
+      backgroundColor: barColors,
+      data: yValues
+    }]
+  },
+  options: {
+    title: {
+      display: true,
+      text: "@cat_input.input_title"
+    }
+  }
+});
+        </script>
+    </text>
+}
+
+@foreach (var cat_input in db.Query("select * from ea_category_inputs where category_id=@0 and input_type = 'multi_select'", category))
+{
+    var titles_str = "[";
+    var data_str = "[";
+    <table>
+        <tr>
+            <td style="width:600px;">
+                <canvas id="Chart-@cat_input.id" style="width: 600px; max-width: 600px; display: inline-block; border: 1px solid #808080;"></canvas>
+            </td>
+            <td>
+                <table>
+                    @foreach (var str in cat_input.input_default.Replace("\r", "").Split('\n'))
+                    {
+                        titles_str += "\"" + str + "\",";
+                        var val = db.QueryValue("select count(*) from ea_components_specs where input_value_target like '%@0%' and input_id=@1", str, cat_input.id);
+                        data_str += val + ",";
+                        <tr><td>@str</td><td style="width:200px;">@val</td></tr>
+                    }
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    titles_str += "]";
+    data_str += "]";
+    titles_str.Replace(",]", "]");
+    data_str.Replace(",]", "]");
+    <text>
+        <script>
+var xValues = @Html.Raw(titles_str);
+var yValues = @Html.Raw(data_str);
+var barColors = [
+    "#b91d47",
+    "#00aba9",
+    "#2b5797",
+    "#e8c3b9",
+    "#1e7145",
+    "#546de5",
+    "#ea8685",
+    "#574b90",
+    "#f19066",
+    "#596275",
+    "#f7d794"
+];
+
+ new Chart("Chart-@cat_input.id", {
+     type: "doughnut",
+  data: {
+    labels: xValues,
+    datasets: [{
+      backgroundColor: barColors,
+      data: yValues
+    }]
+  },
+  options: {
+    title: {
+      display: true,
+      text: "@cat_input.input_title"
+    }
+  }
+});
+        </script>
+    </text>
+
+}
+
+@foreach (var cat_input in db.Query("select * from ea_category_inputs where category_id=@0 and input_type = 'assessment'", category))
+{
+    var titles_str = "[";
+    var data_str = "[";
+    <table>
+        <tr>
+            <td style="width:600px;">
+                <canvas id="Chart-@cat_input.id" style="width: 600px; max-width: 600px; display: inline-block; border: 1px solid #808080;"></canvas>
+            </td>
+            <td>
+                <table>
+                    @foreach (var str in cat_input.input_default.Replace("\r", "").Split('\n'))
+                    {
+                        titles_str += "\"" + str + "\",";
+                        var val = db.QueryValue("select count(*) from ea_components_specs where input_value_target like @0 and input_id=@1", @str.Split(':')[1], cat_input.id);
+                        data_str += val + ",";
+                        <tr><td>@str</td><td style="width:200px;">@val</td></tr>
+                    }
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    titles_str += "]";
+    data_str += "]";
+    titles_str.Replace(",]", "]");
+    data_str.Replace(",]", "]");
+    <text>
+        <script>
+var xValues = @Html.Raw(titles_str);
+var yValues = @Html.Raw(data_str);
+var barColors = [
+    "#b91d47",
+    "#00aba9",
+    "#2b5797",
+    "#e8c3b9",
+    "#1e7145",
+    "#546de5",
+    "#ea8685",
+    "#574b90",
+    "#f19066",
+    "#596275",
+    "#f7d794"
+];
+
+ new Chart("Chart-@cat_input.id", {
+  type: "doughnut",
+  data: {
+    labels: xValues,
+    datasets: [{
+      backgroundColor: barColors,
+      data: yValues
+    }]
+  },
+  options: {
+    title: {
+      display: true,
+      text: "@cat_input.input_title"
+    }
+  }
+});
+        </script>
+    </text>
+
+}
+
+@{ db.Close();}

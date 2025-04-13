@@ -1,0 +1,499 @@
+﻿@{
+
+    var db = Database.Open("EA");
+    var id = Request.QueryString["id"];
+
+    var component = db.QuerySingle("select * from EA_components where id=@0", id);
+
+
+
+    Dictionary<int, String> values = new Dictionary<int, String>();
+    foreach (var input in db.Query("select * from EA_category_inputs where category_id=@0 order by input_order", component.category_id))
+    {
+        try
+        {
+
+            values[input.id] = db.QueryValue("select input_value_target from EA_components_specs where  component_id=@0 and input_id=@1", id, input.id);
+
+        }
+        catch (Exception ex)
+        {
+            values[input.id] = "";
+        }
+
+    }
+
+
+
+
+    //////////////////////////////////
+
+
+
+
+}
+
+
+<div id="description_panel" >
+    
+    <div style="width: 70vw; height: 40px; position: absolute; top:40px; left: 0; background-color: #dbdbdb; border-bottom: 1px solid #ccc; ">
+        <button onclick="update_component()" style="padding: 5px; height: 30px; line-height: 20px; background-color: #122433; float: left; border: 1px solid #000; color: #fff; margin: 5px; margin-right: 80px; " type="button"><i class="fa fa-save"></i> حفظ التعديلات</button>
+    </div>
+    <table class="component_properties">
+
+        <tr>
+            <th style="width:160px;">
+                <label>ترميز:</label>
+
+            </th>
+            <td> <input type="text" id="code" value="@component.code" required /></td>
+        </tr>
+        <tr>
+            <th>
+                <label>الاسم:</label>
+
+            </th>
+            <td><input type="text" id="name" value="@component.name" required /></td>
+        </tr>
+        <tr>
+            <th>
+                <label>الوصف:</label>
+
+            </th>
+            <td> <textarea id="description">@component.description</textarea></td>
+        </tr>
+
+        @if (component.status == true)
+        {
+
+
+            <tr>
+                <th><label>الوضع المستقبلي:</label></th>
+                <td>
+                    <select name="target"  id="target" >
+                        @foreach (var status in db.Query("select id,status from EA_target_status where id!=2"))
+                        {
+                            <option value="@status.id" @if (component.target == status.id) { <text> selected</text> }>@status.status</option>
+                        }
+                    </select>
+                </td>
+            </tr>
+        }
+        else
+        {
+    <tr>
+        <th><label>الوضع المستقبلي:</label></th>
+        <td>
+            جديد <input type="hidden" name="target" id="target" value="2" />
+        </td>
+    </tr>
+
+        }
+
+
+
+        @foreach (var input in db.Query("select * from EA_category_inputs where category_id=@0 order by input_order  ", component.category_id))
+        {
+            <tr>
+                <th width="20%"> <label>@input.input_title</label></th>
+                <td>
+
+
+                    @switch ((string)input.input_type)
+                    {
+                        case "text":
+                            <input type="text" id="input-@input.id" value="@values[input.id]" />
+                            break;
+                        case "date":
+                            <input type="date" id="input-@input.id" value="@values[input.id]" />
+                            break;
+                        case "number":
+                            <input type="number" id="input-@input.id" value="@values[input.id]" />
+                            break;
+                        case "select":
+                            <select id="input-@input.id">
+                                <option value="">-</option>
+                                @foreach (var str in input.input_default.Replace("\r", "").Split('\n'))
+                                {
+                                    <option value="@str" @if (values[input.id] == str) { <text> selected</text> }>@str</option>
+                                }
+                            </select>
+                            break;
+                        case "multi_select":
+                            <select multiple id="input-@input.id">
+                                @if (values[input.id] != null)
+                                {
+                                    foreach (var str in input.input_default.Replace("\r", "").Split('\n'))
+                                    {
+
+                                        <option value="@str" @if (values[input.id].Contains(str)) { <text> selected</text> }>@str</option>
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (var str in input.input_default.Replace("\r", "").Split('\n'))
+                                    {
+
+                                        <option value="@str">@str</option>
+                                    }
+                                }
+
+                            </select>
+                            break;
+                        case "textarea":
+                            <textarea id="input-@input.id">@values[input.id]</textarea>
+                            break;
+                        case "list":
+                            <textarea id="input-@input.id">@values[input.id]</textarea>
+                            break;
+                        case "chain":
+                            <textarea id="input-@input.id">@values[input.id]</textarea>
+                            break;
+                        case "check":
+                            <input type="checkbox" id="input-@input.id" value="Yes" @if (values[input.id] == "Yes") { <text> checked</text> } />
+                            break;
+                      
+                        case "assessment":
+                            <select id="input-@input.id">
+                               
+                                @foreach (var str in input.input_default.Replace("\r", "").Split('\n'))
+                                {
+
+                                    <option value="@str.Split(':')[1]" @if (values[input.id] == @str.Split(':')[1]) { <text> selected</text> }>@str.Split(':')[0]</option>
+                                }
+                            </select>
+                            break;
+                    }
+                </td>
+            </tr>
+
+
+        }
+
+        @foreach (var category_relation in db.Query("select *  from EA_categories_relations where category1=@0 ", component.category_id))
+        {
+            if (db.QueryValue("select count(*) from ea_components where category_id=@0", category_relation.category2) == 0)
+            {
+                continue;
+            }
+            <tr>
+                <th>
+                    @category_relation.category1_title
+                </th>
+                <td>
+                    @if (category_relation.category2_count == 1)
+                    {
+                        var relationship_component2 = db.QuerySingle("select component2 from EA_components_relations where component1=@0 and categories_relation_id=@1 and target!=6 ", id, category_relation.id);
+
+                        <select class="selectpicker" id="select-@(category_relation.id)" onchange="update_relation_select1(@category_relation.id,@id)">
+                            <option value="0">-</option>
+                            @foreach (var component_ in db.Query("select * from EA_components where category_id=@0 and target!=6", category_relation.category2))
+                            {
+                                <option value="@component_.id" @if (relationship_component2 != null && relationship_component2.component2 == component_.id) { <text> selected</text> }>@component_.name</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <input type="text" id="search_relations-@category_relation.id" onkeyup="search_relations(@category_relation.id)" style="width:200px;" placeholder="تصفية .." />
+                        <div style="height: 150px; overflow-y: scroll;">
+                            <table id="relations_table-@category_relation.id">
+
+
+                                @foreach (var sub_item in db.Query("select * from ea_components where category_id=@0  and target!=6 order by id desc", category_relation.category2))
+                                {
+                                    if (sub_item.id == long.Parse(id))
+                                    {
+                                        continue;
+                                    }
+                                    var checked_ = "";
+                                    var display = "none";
+                                    var relationship_desc = "";
+
+
+                                    var relationship = db.QuerySingle("select * from EA_components_relations where component1=@0 and component2=@1 and categories_relation_id=@2 and target!=6 ", id, sub_item.id, category_relation.id);
+                                    if (relationship != null)
+                                    {
+                                        checked_ = "checked";
+                                        display = "block";
+                                        relationship_desc = relationship.description;
+
+                                    }
+                                    <tr id="relation_row-@(category_relation.id)-@(@sub_item.id)">
+                                        <td style="width:30px;"><input type="checkbox" id="check-@(category_relation.id)-@(@sub_item.id)" @checked_ onclick="update_relation1_checkbox(@category_relation.id,@id,@sub_item.id)" /></td>
+                                        <td style="width:180px;">@sub_item.name</td>
+                                        <td style="width:240px;"><input type="text" style="width:95%;display:@display;" id="relation_desc-@(category_relation.id)-@sub_item.id" value="@relationship_desc" placeholder="وصف العلاقة .." onchange="update_relation1_desc(@category_relation.id,@id,@sub_item.id)" /></td>
+                                    </tr>
+
+                                }
+
+                            </table>
+                        </div>
+                    }
+                </td>
+            </tr>
+        }
+
+        @foreach (var category_relation in db.Query("select *  from EA_categories_relations where category2=@0 ", component.category_id))
+        {
+            if (db.QueryValue("select count(*) from ea_components where category_id=@0  and target!=6", category_relation.category1) == 0)
+            {
+                continue;
+            }
+            <tr>
+                <th>
+                    @category_relation.category2_title
+                </th>
+                <td>
+                    @if (category_relation.category1_count == 1)
+                    {
+                        var relationship_component1 = db.QuerySingle("select component1 from EA_components_relations where component2=@0 and categories_relation_id=@1 and target!=6 ", id, category_relation.id);
+
+                        <select class="selectpicker" id="select-@(category_relation.id)" onchange="update_relation_select2(@category_relation.id,@id)">
+                            <option value="0">-</option>
+                            @foreach (var component_ in db.Query("select * from EA_components where category_id=@0  and target!=6", category_relation.category1))
+                            {
+                                <option value="@component_.id" @if (relationship_component1 != null && relationship_component1.component1 == component_.id) { <text> selected</text> }>@component_.name</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <input type="text" id="search_relations-@category_relation.id" onkeyup="search_relations(@category_relation.id)" style="width:200px;" placeholder="تصفية .." />
+                        <div style="height: 150px; overflow-y: scroll;">
+                            <table id="relations_table-@category_relation.id">
+
+
+                                @foreach (var sub_item in db.Query("select * from ea_components where category_id=@0  and target!=6 order by id desc", category_relation.category1))
+                                {
+                                    if (sub_item.id == long.Parse(id))
+                                    {
+                                        continue;
+                                    }
+                                    var checked_ = "";
+                                    var display = "none";
+                                    var relationship_desc = "";
+
+
+                                    var relationship = db.QuerySingle("select * from EA_components_relations where component2=@0 and component1=@1 and categories_relation_id=@2 and target!=6 ", id, sub_item.id, category_relation.id);
+                                    if (relationship != null)
+                                    {
+                                        checked_ = "checked";
+                                        display = "block";
+                                        relationship_desc = relationship.description;
+
+                                    }
+                                    <tr id="relation_row-@(category_relation.id)-@(@sub_item.id)">
+                                        <td style="width:30px;"><input type="checkbox" id="check-@(category_relation.id)-@(@sub_item.id)" @checked_ onclick="update_relation2_checkbox(@category_relation.id,@sub_item.id,@id)" /></td>
+                                        <td style="width:180px;">@sub_item.name</td>
+                                        <td style="width:240px;"><input type="text" style="width:95%;display:@display;" id="relation_desc-@(category_relation.id)-@sub_item.id" value="@relationship_desc" placeholder="وصف العلاقة .." onchange="update_relation2_desc(@category_relation.id,@sub_item.id,@id)" /></td>
+                                    </tr>
+
+                                }
+
+                            </table>
+                        </div>
+                    }
+                </td>
+            </tr>
+        }
+
+
+    </table>
+
+
+</div>
+
+<!--*******************************************************************************8***************************-->
+
+<div style="width:400px;height:200px;background-color:#e2fee8;color:#3f6686;position:fixed;z-index:33333;top:35vh;right:50vw;vertical-align:middle;line-height:200px;text-align:center;display:none;" id="saving_panel">جاري حفظ التعديلات ...</div>
+
+<script>
+  
+    $(document).ready(
+        function () {
+        $(".selectpicker").select2();
+        });
+
+    function update_component() {
+        $("#saving_panel").show();
+        $.post("specs_target_save.cshtml?id=@id",
+            {
+                  @foreach (var input in db.Query("select * from EA_category_inputs where category_id=@0 order by input_order  ", component.category_id))
+                      {
+                       <text>"input-@input.id": String($("#input-@input.id").val()),</text>
+                      }
+                "code": document.getElementById("code").value,
+                "name": document.getElementById("name").value,
+                "description": document.getElementById("description").value,
+                "target": document.getElementById("target").value
+
+            }).done(function () {
+                $("#panel3").load("specs_target.cshtml?id=@id");
+                $("#panel2").load("components_target.cshtml?cat=@component.category_id", function (responseTxt, statusTxt, xhr) {
+                    if (statusTxt == "success") {
+                         $(".panel2-link").removeClass("panel2-link-active");
+                $("#panel2-link-@id").addClass("panel2-link-active");
+                    }
+                });
+                $("#saving_panel").hide();
+
+
+            });
+
+    }
+
+    ////realtions////////////////////
+    function update_relation_select1(cat_rel_id,id) {
+       
+        var action = "";
+        if (document.getElementById("select-" + cat_rel_id).value == "0") {
+            action = "delete_select1";
+        }
+        else {
+            action = "add_select1";
+        }
+        $.post("relations_target_save.cshtml",
+            {
+
+                "component1": id,
+                "component2": document.getElementById("select-" + cat_rel_id).value,
+                "cat_rel_id": cat_rel_id,
+                "action": action
+
+            }).done(function () {
+               
+            });
+    }
+    function update_relation_select2(cat_rel_id, id) {
+
+        var action = "";
+        if (document.getElementById("select-" + cat_rel_id).value == "0") {
+            action = "delete_select2";
+        }
+        else {
+            action = "add_select2";
+        }
+        $.post("relations_target_save.cshtml",
+            {
+
+                "component1": document.getElementById("select-" + cat_rel_id).value,
+                "component2": id,
+                "cat_rel_id": cat_rel_id,
+                "action": action
+
+            }).done(function () {
+
+            });
+    }
+    function update_relation1_checkbox(cat_rel_id,id1, id2) {
+       
+        var action = "";
+        if (document.getElementById("check-" + cat_rel_id+"-"+id2).checked == true) {
+            action = "add";
+        }
+        else {
+            action = "delete";
+        }
+        $.post("relations_target_save.cshtml",
+            {
+
+                "component1": id1,
+                "component2": id2,
+                "cat_rel_id": cat_rel_id,
+                "action": action
+
+             }).done(function () {
+                 if (document.getElementById("check-" + cat_rel_id + "-" + id2).checked == true) {
+                     $("#relation_desc-" + cat_rel_id + "-" + id2).show();
+                 }
+                 else {
+                     $("#relation_desc-" + cat_rel_id + "-" + id2).hide();
+                 }
+
+            });
+    }
+
+    function update_relation2_checkbox(cat_rel_id, id1, id2) {
+
+        var action = "";
+        if (document.getElementById("check-" + cat_rel_id + "-" + id1).checked == true) {
+            action = "add";
+        }
+        else {
+            action = "delete";
+        }
+        $.post("relations_target_save.cshtml",
+            {
+
+                "component1": id1,
+                "component2": id2,
+                "cat_rel_id": cat_rel_id,
+                "action": action
+
+            }).done(function () {
+                if (document.getElementById("check-" + cat_rel_id + "-" + id1).checked == true) {
+                    $("#relation_desc-" + cat_rel_id + "-" + id1).show();
+                }
+                else {
+                    $("#relation_desc-" + cat_rel_id + "-" + id1).hide();
+                }
+
+            });
+    }
+
+
+    function update_relation1_desc(cat_rel_id,id1, id2) {
+         
+        $.post("relations_target_save.cshtml",
+                {
+                    "component1": id1,
+                    "component2": id2,
+                    "cat_rel_id": cat_rel_id,
+                    "relation_desc": document.getElementById("relation_desc-" + cat_rel_id + "-" + id2).value,
+                    "action": "update"
+
+                }).done(function () {
+
+                });
+    }
+    function update_relation2_desc(cat_rel_id, id1, id2) {
+
+        $.post("relations_target_save.cshtml",
+            {
+                "component1": id1,
+                "component2": id2,
+                "cat_rel_id": cat_rel_id,
+                "relation_desc": document.getElementById("relation_desc-" + cat_rel_id + "-" + id1).value,
+                "action": "update"
+
+            }).done(function () {
+
+            });
+    }
+    function search_relations(cat_rel_id) {
+        // Declare variables
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("search_relations-" + cat_rel_id);
+        filter = input.value.toUpperCase();
+        table = document.getElementById("relations_table-" + cat_rel_id);
+        tr = table.getElementsByTagName("tr");
+
+        for (i = 1; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[1];
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+    /////////////////////////////////////
+ 
+</script>
+@{ 
+    db.Close();
+}

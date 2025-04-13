@@ -1,0 +1,41 @@
+﻿@{
+
+    var db = Database.Open("EA");
+
+
+    if (IsPost)
+    {
+
+        if (!Request.Form["relation"].IsEmpty())
+        {
+            if (Request.Form["action"] == "add")
+            {
+                try
+                {
+                    db.Execute("insert into EA_diagrams_relations_target (diagram_component_id,components_relation_id) values (@0,@1) ", Request.QueryString["id"], Request.Form["relation"]);
+
+                }
+                catch (Exception ex)
+                {
+
+                }
+                
+            }
+            else
+            {
+                try
+                {
+                    db.Execute("delete from EA_diagrams_relations_target where diagram_component_id=@0 and components_relation_id=@1  ", Request.QueryString["id"], Request.Form["relation"]);
+
+                }
+                catch (Exception ex)
+                {
+
+                }
+               
+            }
+        }
+
+        db.Close();
+    }
+}

@@ -1,0 +1,106 @@
+﻿@{
+
+    var db = Database.Open("EA");
+    var category = Request.QueryString["cat"];
+    var cat_info = db.QuerySingle("select * from ea_categories where id=@0", category);
+    var i = 1;// db.QueryValue("select count(*) from EA_components where category_id=@0  and parent=0 and status=1 ", category);
+}
+
+<table id="items_table">
+    <tr>
+
+        <th colspan="2">@cat_info.title <input type="text" style="width:200px;" id="baseline_component" placeholder="إضافة عنصر جديد .." /></th>
+        <th><button onclick="add_component()"><i class="las la-plus"></i></button></th>
+    </tr>
+    <tr>
+
+        <td colspan="3"><input type="text" id="search_items" onkeyup="search_items()" placeholder="بحث سريع.." /></td>
+
+    </tr>
+
+    @foreach (var item in db.Query("select * from EA_components where category_id=@0 and parent=0 and status=1 order by id asc", category))
+    {
+
+        <tr>
+            <td>@i</td>
+            <td><a href="#" id="panel2-link-@item.id" class="panel2-link" onclick="getSpecs(@item.id)">@item.name</a></td>
+            <td><button onclick="del_component(@item.id)"><i class="las la-trash"></i></button></td>
+        </tr>
+        i++;
+
+    }
+
+</table>
+
+<script>
+    function getSpecs(id) {
+
+
+        $("#panel3").load("specs_baseline.cshtml?id=" + id);
+        $(".panel2-link").removeClass("panel2-link-active");
+        $("#panel2-link-" + id).addClass("panel2-link-active");
+        $("#panel3").scrollTop(0);
+    }
+
+    function add_component() {
+
+        $.post("add_del_baseline.cshtml?cat=@category",
+            {
+                "baseline_component": document.getElementById("baseline_component").value
+            }).done(function (data) {
+                $("#panel3").load("specs_baseline.cshtml?id=" + Number.parseInt(data));
+
+                $("#panel2").load("components_baseline.cshtml?cat=@category", function (responseTxt, statusTxt, xhr) {
+                    if (statusTxt == "success") {
+                        $("#panel2").scrollTop(10000);
+                         $(".panel2-link").removeClass("panel2-link-active");
+                        $("#panel2-link-" + Number.parseInt(data)).addClass("panel2-link-active");
+                    }
+                });
+
+            });
+
+
+    }
+
+    function del_component(id) {
+        if (confirm("هل تريد تأكيد حذف العنصر نهائيا؟")) {
+
+            $.post("add_del_baseline.cshtml?cat=@category",
+            {
+                delete_component: id+""
+            }).done(function () {
+
+
+                $("#panel2").load("components_baseline.cshtml?cat=@category");
+                $("#panel3").load("empty.cshtml");
+
+            });
+
+        }
+    }
+
+
+    function search_items() {
+        // Declare variables
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("search_items");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("items_table");
+        tr = table.getElementsByTagName("tr");
+
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[1];
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+
+</script>
+@{ db.Close();}

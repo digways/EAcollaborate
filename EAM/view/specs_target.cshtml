@@ -1,0 +1,189 @@
+﻿@{
+
+    var db = Database.Open("EA");
+    var id = Request.QueryString["id"];
+
+    var component = db.QuerySingle("select * from EA_components where id=@0", id);
+
+
+
+    Dictionary<int, String> values = new Dictionary<int, String>();
+    foreach (var input in db.Query("select * from EA_category_inputs where category_id=@0 order by input_order", component.category_id))
+    {
+        try
+        {
+
+            values[input.id] = db.QueryValue("select input_value_target from EA_components_specs where  component_id=@0 and input_id=@1", id, input.id);
+
+        }
+        catch (Exception ex)
+        {
+            values[input.id] = "";
+        }
+
+    }
+
+
+
+
+    //////////////////////////////////
+
+
+
+
+}
+
+
+
+
+<div id="description_panel">
+
+    <div style="width: 70vw; height: 40px; position: absolute; top: 40px; left: 0; background-color: #dbdbdb; border-bottom: 1px solid #ccc; ">
+    </div>
+    <table class="component_properties">
+
+        <tr>
+            <th style="width:160px;">
+                <label>ترميز:</label>
+
+            </th>
+            <td> @component.code</td>
+        </tr>
+        <tr>
+            <th>
+                <label>الاسم:</label>
+
+            </th>
+            <td>@component.name</td>
+        </tr>
+        <tr>
+            <th>
+                <label>الوصف:</label>
+
+            </th>
+            <td> @(component.description!=null? Html.Raw(component.description.Replace("\r","").Replace("\n","<br/>")):"")</td>
+        </tr>
+
+
+
+        @foreach (var input in db.Query("select * from EA_category_inputs where category_id=@0 order by input_order  ", component.category_id))
+        {
+            <tr>
+                <th width="20%"> <label>@input.input_title</label></th>
+                <td>
+
+
+                    @switch ((string)input.input_type)
+                    {
+
+                        default:
+                            <text>@values[input.id]</text>
+                            break;
+
+                        case "multi_select":
+                            <text>@(values[input.id]!=null? Html.Raw(values[input.id].Replace(",", "<br/>")):"")</text>
+
+                            break;
+                        case "textarea":
+                            <text>@(values[input.id]!=null? Html.Raw(values[input.id].Replace("\r", "").Replace("\n", "<br/>")) : "")</text>
+                            break;
+                        case "list":
+                            <text>@(values[input.id]!=null? Html.Raw(values[input.id].Replace("\r", "").Replace("\n", "<br/>")) : "")</text>
+                            break;
+                        case "chain":
+                            <text>@(values[input.id]!=null? Html.Raw(values[input.id].Replace("\r", "").Replace("\n", "&gt;")) : "")</text>
+                            break;
+
+
+                        case "assessment":
+
+                            foreach (var str in input.input_default.Replace("\r", "").Split('\n'))
+                            {
+                                if (values[input.id] == @str.Split(':')[1])
+                                {<text>@str.Split(':')[0]</text>}
+                        }
+
+                        break;
+                }
+                </td>
+            </tr>
+
+
+        }
+
+        @foreach (var category_relation in db.Query("select *  from EA_categories_relations where category1=@0 ", component.category_id))
+        {
+
+            <tr>
+                <th>
+                    @category_relation.category1_title
+                </th>
+                <td>
+                   
+                        <div style="height: 150px; overflow-y: scroll;">
+                            <table id="relations_table-@category_relation.id">
+
+
+                                @foreach (var sub_item in db.Query("select * from ea_components where  id in (select component2 from EA_components_relations where component1=@0 and categories_relation_id=@1  and target!=6) order by id desc", id, category_relation.id))
+                                {
+
+
+                                    var relationship = db.QuerySingle("select * from EA_components_relations where component1=@0 and component2=@1 and categories_relation_id=@2  and target!=6  ", id, sub_item.id, category_relation.id);
+
+
+                                    <tr id="relation_row-@(category_relation.id)-@(@sub_item.id)">
+                                        <td style="width:30px;"></td>
+                                        <td style="width:180px;">@sub_item.name</td>
+                                        <td style="width:240px;">@relationship.description</td>
+                                    </tr>
+
+                                }
+
+                            </table>
+                        </div>
+                    
+                </td>
+            </tr>
+        }
+
+        @foreach (var category_relation in db.Query("select *  from EA_categories_relations where category2=@0 ", component.category_id))
+        {
+            <tr>
+                <th>
+                    @category_relation.category2_title
+                </th>
+                <td>
+                   
+                        <div style="height: 150px; overflow-y: scroll;">
+                            <table id="relations_table-@category_relation.id">
+                                @foreach (var sub_item in db.Query("select * from ea_components where  id in (select component1 from EA_components_relations where component2=@0 and categories_relation_id=@1  and target!=6) order by id desc", id, category_relation.id))
+                                {
+
+
+                                    var relationship = db.QuerySingle("select * from EA_components_relations where component2=@0 and component1=@1 and categories_relation_id=@2  and target!=6  ", id, sub_item.id, category_relation.id);
+                                    <tr id="relation_row-@(category_relation.id)-@(@sub_item.id)">
+                                        <td style="width:30px;"></td>
+                                        <td style="width:180px;">@sub_item.name</td>
+                                        <td style="width:240px;">@relationship.description</td>
+                                    </tr>
+
+                                }
+
+                            </table>
+                        </div>
+                  
+                </td>
+            </tr>
+        }
+
+
+    </table>
+
+
+</div>
+
+
+
+@{
+    db.Close();
+}

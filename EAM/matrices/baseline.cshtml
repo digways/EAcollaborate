@@ -1,0 +1,48 @@
+﻿@{
+
+    var db = Database.Open("EA");
+    var category_rel = Request.QueryString["cat"];
+    var cat_rel_info = db.QuerySingle("select * from ea_categories_relations where id=@0", category_rel);
+    var cat1 = db.QueryValue("select title from ea_categories where id =@0", cat_rel_info.category1);
+    var cat2 = db.QueryValue("select title from ea_categories where id =@0", cat_rel_info.category2);
+    var components1 = db.Query("select id,name from ea_components where category_id=@0", cat_rel_info.category1);
+    var components2 = db.Query("select id,name from ea_components where category_id=@0", cat_rel_info.category2);
+    var relations = db.Query("select component1,component2 from ea_components_relations where categories_relation_id=@0 and status=1", category_rel);
+}
+
+
+<table class="matrix">
+    <tr>
+        <th scope="row" style="z-index:222;">
+            <h1 style="width:100%;">مصفوفة @cat1 / @cat2</h1>
+        </th>
+        @foreach(var comp2 in components2)
+            {
+                <th style="writing-mode: vertical-lr;text-orientation:mixed;" id="th_@comp2.id">@comp2.name</th>
+            }
+    </tr>
+    @foreach(var comp1 in components1)
+            {
+                <tr>
+                    <th scope="row"  id="th_@comp1.id">@comp1.name</th>
+                    @foreach (var comp2 in components2)
+                    {
+                        <td><div  id="check-@(comp1.id)-@(comp2.id)" onmouseover="highlight(@comp1.id,@comp2.id)" style="width:20px;height:20px;border:1px solid #eee;" ></div></td>
+                    }
+                </tr>
+            }
+</table>
+
+<script>
+    function highlight(a, b) {
+       // alert("" + a + "b");
+        $("th").css("background-color", "#eee");
+        $("#th_" + a).css("background-color", "#fff");
+        $("#th_" + b).css("background-color", "#fff");
+    }
+    @foreach(var r in relations)
+            {
+                <text>$("#check-@r.component1-@r.component2").css("background-color", "#4CAF50");</text>
+            }
+</script>
+@{ db.Close();}

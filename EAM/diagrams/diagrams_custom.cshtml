@@ -1,0 +1,114 @@
+﻿@{
+
+    var db = Database.Open("EA");
+    var category = Request.QueryString["cat"];
+    
+
+}
+
+<table id="items_table">
+    <tr>
+
+        <th><input type="text" style="width:190px;" id="diagram_title" placeholder="إنشاء تصميم جديد .." /></th>
+        <th colspan="2"><button onclick="add_diagram()"><i class="las la-plus"></i></button></th>
+    </tr>
+    <tr>
+
+        <td colspan="3"><input type="text" id="search_items" onkeyup="search_items()" placeholder="بحث سريع.." /></td>
+
+    </tr>
+
+    @foreach (var item in db.Query("select * from EA_diagrams_custom where group_id=@0 ", category))
+    {
+        <tr>
+
+            <td><a href="#" id="panel2-link-@item.id" class="panel2-link" onclick="view_diagram(@item.id)">@item.title</a></td>
+            <td><button onclick="edit_diagram(@item.id)"><i class="las la-edit"></i></button></td>
+            <td><button onclick="del_diagram(@item.id)"><i class="las la-trash"></i></button></td>
+        </tr>
+
+
+    }
+
+</table>
+
+<script>
+    function edit_diagram(id) {
+
+
+        $("#panel3").load("diagram_custom_edit.cshtml?id=" + id);
+       $(".panel2-link").removeClass("panel2-link-active");
+        $("#panel2-link-" + id).addClass("panel2-link-active");
+        $("#panel3").scrollTop(0);
+    }
+
+    function view_diagram(id) {
+
+
+        $("#panel3").load("diagram_custom.cshtml?id=" + id);
+        $(".panel2-link").removeClass("panel2-link-active");
+        $("#panel2-link-" + id).addClass("panel2-link-active");
+        $("#panel3").scrollTop(0);
+    }
+    function add_diagram() {
+
+        $.post("add_del_custom.cshtml?cat=@category",
+            {
+                "diagram": document.getElementById("diagram_title").value
+            }).done(function (data) {
+                $("#panel3").load("diagram_custom_edit.cshtml?id=" + Number.parseInt(data));
+
+                $("#panel2").load("diagrams_custom.cshtml?cat=@category", function (responseTxt, statusTxt, xhr) {
+                    if (statusTxt == "success") {
+                        $("#panel2").scrollTop(10000);
+                        $(".panel2-link").removeClass("panel2-link-active");
+                        $("#panel2-link-" + Number.parseInt(data)).addClass("panel2-link-active");
+                    }
+                });
+
+            });
+
+
+    }
+
+
+
+
+
+    function del_diagram(id) {
+        if (confirm("هل تريد تأكيد حذف النموذج نهائيا؟")) {
+
+            $.post("add_del_custom.cshtml?cat=@category",
+            {
+                delete_diagram: id+""
+                }).done(function () {
+                    $("#panel2").load("diagrams_custom.cshtml?cat=@category");
+                 $("#panel3").load("empty.cshtml");
+            });
+
+        }
+    }
+
+    function search_items() {
+        // Declare variables
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("search_items");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("items_table");
+        tr = table.getElementsByTagName("tr");
+
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[0];
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+
+</script>
+@{ db.Close();}

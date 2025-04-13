@@ -1,0 +1,87 @@
+﻿@{
+
+    var db = Database.Open("EA");
+    var category = Request.QueryString["cat"];
+    var cat_info = db.QuerySingle("select * from ea_categories where id=@0", category);
+    var i = 1;
+}
+<h1>@cat_info.title</h1>
+<button class="exportToExcel" style="float:right;">Export to XLS</button>
+<table class="sheetjs">
+    
+    <thead>
+        <tr>
+            <th>N</th>
+            <th>الرمز</th>
+            <th>الاسم</th>
+            <th>الوصف</th>
+
+            @foreach (var input in db.Query("select   input_title from EA_category_inputs where category_id=@0 order by input_order  ", category))
+            {
+                <th>@input.input_title</th>
+            }
+            
+
+        </tr>
+
+    </thead>
+
+    <tbody>
+        @foreach (var item in db.Query("select id,name,code,description,status,target  from EA_components where category_id=@0 and status=1 ", category))
+        {
+            <tr>
+                <th>@i</th>
+                <td>@item.code</td>
+                <td>@item.name</td>
+                <td>@item.description</td>
+                @foreach (var input in db.Query("select EA_components_specs.input_value,EA_category_inputs.input_default,EA_category_inputs.input_type from EA_components_specs inner join EA_category_inputs on EA_components_specs.input_id =EA_category_inputs.id  where EA_category_inputs.category_id=@0 and EA_components_specs.component_id=@1  order by EA_category_inputs.input_order  ", category, item.id))
+                {
+                    if (input.input_type == "assessment")
+                    {
+                        foreach (var str in input.input_default.Replace("\r", "").Split('\n'))
+                        {
+                            if (input.input_value == @str.Split(':')[1])
+                            {
+                                <td>@str.Split(':')[0]</td>
+                            }
+                    }
+                    
+                }
+                else
+                {
+                    <td>@input.input_value</td>
+                }
+
+
+            }
+
+
+            </tr>
+            i++;
+
+        }
+    </tbody>
+</table>
+<script src="~/assets/js/jquery.sheetjs.js"></script>
+<script>
+    $(function () {
+        $(".exportToExcel").click(function (e) {
+            var table = $(".sheetjs");
+            if (table && table.length) {
+                var preserveColors = (table.hasClass('table2excel_with_colors') ? true : false);
+                $(table).table2excel({
+                    exclude: ".noxsl",
+                    name: "@cat_info.title",
+                    filename: "@(cat_info.title)_" + new Date().toISOString().replace(/[\-\:\.]/g, "") + ".xls",
+                    fileext: ".xls",
+                    exclude_img: true,
+                    exclude_links: true,
+                    exclude_inputs: true,
+                    preserveColors: preserveColors
+                });
+            }
+        });
+
+    });
+</script>
+@{ db.Close();}

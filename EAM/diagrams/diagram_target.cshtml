@@ -1,0 +1,88 @@
+﻿@{
+  
+    var db = Database.Open("EA");
+    var id =  Request.QueryString["id"];
+    var diagram = db.QuerySingle("select * from EA_diagrams where id=@0", id);
+    var Ids = new List<Int64>();
+
+    foreach(var diagram_components in db.Query("select component1,component2 from EA_components_relations where target!=6 and id in (select components_relation_id from EA_diagrams_relations_target where diagram_component_id in (select id from EA_diagrams_components where diagram_id=@0 and target=1))", id))
+    {
+        if(Ids.Contains(diagram_components.component1)==false)
+        {
+            Ids.Add(diagram_components.component1);
+        }
+        if (Ids.Contains(diagram_components.component2) == false)
+        {
+            Ids.Add(diagram_components.component2);
+        }
+    }
+
+
+}
+<div style="width: 70vw; height: calc(100vh - 40px); direction: ltr;background-color:#fff; " id="editor"></div>
+
+<script>
+    var editor = new dhx.Diagram("editor", {
+        scale: 0.9,
+        autoplacement: {
+            mode: "direct",
+            graphPadding: 10,
+           /* placeMode: "radial"*/
+
+        },
+
+    });
+    var EAComponentTemplate = ({ cat, text, color, icon, corner }) => (`<section class="DItem" style="background-color:${color};border-radius:${corner}px;text-align:center;"><span style="margin-right:30px;">${text}</span><img style="position:absolute;top:2px;right:2px;width:25px;height:25px;" src="/assets/icons/${cat}.svg" /></section>`);
+    editor.addShape("EAComponent", {
+        template: EAComponentTemplate,
+        defaults:
+        {
+            width: 180,
+            height: 60,
+            text: ""
+        }
+    });
+
+    editor.data.parse("[]");
+
+    @foreach(var item in Ids)
+    {
+        var comp_info = db.QuerySingle("select ea_components.name,ea_components.id,ea_categories.icon,ea_categories.bg_color,ea_categories.short_title,ea_categories.corner,ea_components.category_id from ea_components inner join ea_categories on ea_components.category_id=ea_categories.id where ea_components.id=@0 ", item);
+     <text>editor.data.add({ id: @comp_info.id, type: "EAComponent", text: "@comp_info.name", color: "@comp_info.bg_color", icon: "@comp_info.icon", corner: "@comp_info.corner", cat: "@comp_info.category_id" });</text>
+    }
+
+     @foreach(var item1 in Ids)
+     {
+         foreach (var item2 in Ids)
+         {
+             var rel = db.QuerySingle("select id,categories_relation_id from EA_components_relations where component1=@0 and component2=@1 and target!=6", item1, item2);
+             if (rel!=null)
+             {
+                 var rel_desc = db.QueryValue("select relation from ea_categories_relations where id=@0", rel.categories_relation_id);
+                   <text>editor.data.add({ id: @rel.id, from: @item1, to: @item2, type: "line", title: { text: [{ text: "@rel_desc" }] } });</text>
+             }
+         }
+
+         }
+
+    @if(Ids.Count>0)
+            {
+                <text>
+
+    editor.autoPlace({
+        mode: "direct",
+      
+    });
+    </text>
+            }
+
+   
+    editor.paint();
+
+
+
+
+</script>
+@{
+    db.Close();
+}

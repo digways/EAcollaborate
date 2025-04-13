@@ -1,0 +1,12 @@
+﻿@{
+    if(lic.checklic()==false)
+    {
+        Response.Redirect("~/expired");
+    }
+    if (Request.Cookies["EA_USER"] == null)
+    {
+        Response.Redirect("~/login");
+    }
+
+
+}

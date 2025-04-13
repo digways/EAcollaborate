@@ -1,0 +1,73 @@
+﻿@{
+    Layout = "_Layout.cshtml";
+    var db = Database.Open("EA");
+  
+}
+<div class="panel1_1">
+    <div class="content">
+        <button class="accordion active">&nbsp;<i class="las la-bookmark-o"></i>&nbsp; الوضع الحالي</button>
+        <div class="accordion_panel">
+
+            <ul>
+                @foreach (var cat in db.Query("select * from ea_categories_relations "))
+                {
+                    var cat1 = db.QueryValue("select title from ea_categories where id =@0", cat.category1);
+                    var cat2 = db.QueryValue("select title from ea_categories where id =@0", cat.category2);
+                    <li><a href="#cat-@cat.id" id="mainlink-@cat.id-baseline" class="main-link" onclick="getMatrix_baseline(@cat.id)"><i class="las la-table"></i> @cat1 / @cat2 </a></li>
+                }
+            </ul>
+        </div>
+        <button class="accordion">&nbsp;<i class="las la-bookmark-o"></i>&nbsp; الوضع المستهدف</button>
+        <div class="accordion_panel">
+
+            <ul>
+                @foreach (var cat in db.Query("select * from ea_categories_relations "))
+                {
+                    var cat1 = db.QueryValue("select title from ea_categories where id =@0", cat.category1);
+                    var cat2 = db.QueryValue("select title from ea_categories where id =@0", cat.category2);
+                    <li><a href="#cat-@cat.id" id="mainlink-@cat.id-target" class="main-link" onclick="getMatrix_target(@cat.id)"><i class="las la-table"></i> @cat1 / @cat2 </a></li>
+                }
+            </ul>
+        </div>
+    </div>
+    </div>
+<div class="panel4_1">
+    <div class="content_panel4" id="panel4"></div>
+</div>
+
+<script>
+
+    function getMatrix_baseline(id) {
+        
+        $("#panel4").load("baseline.cshtml?cat=" + id);
+        $(".main-link").removeClass("main-link-active");
+        $("#mainlink-" + id+"-baseline").addClass("main-link-active");
+
+    }
+    function getMatrix_target(id) {
+
+        $("#panel4").load("target.cshtml?cat=" + id);
+        $(".main-link").removeClass("main-link-active");
+        $("#mainlink-" + id + "-target").addClass("main-link-active");
+
+    }
+
+   
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+
+        acc[i].addEventListener("click", function () {
+            $(".accordion").removeClass("active");
+            this.classList.add("active");
+        });
+    } 
+
+</script>
+
+
+
+@{
+    db.Close();
+}

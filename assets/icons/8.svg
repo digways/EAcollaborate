@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 60 60" width="60px" height="60px" xmlns="http://www.w3.org/2000/svg">
+  <rect x="6.679" y="12.953" width="25.7" height="12.364" style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 2px;"/>
+  <rect x="6.472" y="32.909" width="25.907" height="12.364" style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 2px;"/>
+  <polygon style="stroke: rgb(0, 0, 0); fill: none; stroke-width: 2px;" points="19.672 12.916 19.672 5.824 48.921 5.72 48.818 50.345 19.413 50.501 19.413 45.168 32.252 45.116 32.407 32.64 19.31 32.796 19.258 25.237 32.459 25.237 32.563 12.813"/>
+</svg>

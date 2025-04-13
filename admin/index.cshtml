@@ -1,0 +1,132 @@
+﻿@{
+
+
+    var db = Database.Open("EA");
+    Layout = "~/admin/_Layout.cshtml";
+    var category = db.QueryValue("select min(id) from EA_categories");
+    if (!Request.QueryString["cat"].IsEmpty())
+    {
+        category = int.Parse(Request.QueryString["cat"]);
+    }
+
+    var category_item = db.QuerySingle("select * from EA_categories where id=@0 ", category);
+
+    if (!Request.QueryString["del"].IsEmpty())
+    {
+        db.Execute("delete from  EA_category_inputs where id=@0 ", Request.QueryString["del"]);
+        Response.Redirect("~/admin/index.cshtml?cat=" + category);
+    }
+
+
+    if (IsPost)
+    {
+        if (!Request.QueryString["edit"].IsEmpty())
+        {
+            db.Execute("update EA_category_inputs  set input_title=@0,input_type=@1,input_default=@2,input_order=@3 where id=@4 ", Request.Form["input_title"], Request.Form["input_type"], Request.Form["input_default"], Request.Form["input_order"], Request.QueryString["edit"]);
+
+        }
+        else
+        {
+            db.Execute("insert into EA_category_inputs (input_title,input_type,input_default,input_order,category_id) values (@0,@1,@2,@3,@4) ", Request.Form["input_title"], Request.Form["input_type"], Request.Form["input_default"], Request.Form["input_order"], category);
+        }
+
+        Response.Redirect("~/admin/index.cshtml?cat=" + category);
+
+    }
+
+    var input_title = "";
+    var input_type = "text";
+    var input_default = "";
+    var input_order = 1;
+
+    if (!Request.QueryString["edit"].IsEmpty())
+    {
+        var item = db.QuerySingle("select * from EA_category_inputs where id=@0", Request.QueryString["edit"]);
+
+        input_title = item.input_title;
+        input_type = item.input_type;
+        input_default = item.input_default;
+        input_order = item.input_order;
+    }
+    
+
+}
+
+
+
+    <form>
+        <select name="cat" onchange="this.form.submit()">
+            @foreach(var row in db.Query("select * from ea_categories"))
+            {
+                <option value="@row.id" @if (row.id == category) { <text>selected</text>}>@row.title</option>
+            }
+
+        </select>
+    </form>
+    <div class="panel">
+        <form method="post">
+            <table>
+                <tr><td style="width:15%;"><label>input title</label></td><td><input type="text" name="input_title" class="form-control" value="@input_title" required /></td></tr>
+                <tr>
+                    <td><label>input type</label></td>
+                    <td>
+                        <select id="input_type" name="input_type" class="form-control" required>
+                            <option value="text">text</option>
+                            <option value="check">check</option>
+                            <option value="select">select</option>
+                            <option value="multi_select">multi select</option>
+                            <option value="textarea">textarea</option>
+                            <option value="date">date</option>
+                            <option value="number">number</option>
+                            @*<option value="category">category</option>*@
+                            <option value="assessment">assessment</option>
+                            <option value="list">list</option>
+                            <option value="chain">chain</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr><td><label>input default</label></td><td><textarea name="input_default" class="form-control">@input_default</textarea></td></tr>
+                <tr><td><label>input order</label></td><td><input type="number" name="input_order" class="form-control" value="@input_order" required /></td></tr>
+                <tr>
+                    <td></td>
+                    <td>
+                       
+                            <input type="submit" class="btn btn-primary" value="حفظ" />
+                       
+                    </td>
+                </tr>
+            </table>
+            <script>
+                document.getElementById("input_type").value="@input_type";
+            </script>
+        </form>
+    </div>
+
+
+
+<table class="table">
+    <tr>
+        <th>input title</th>
+        <th>input type</th>
+        <th>input default</th>
+        <th>input order</th>
+        <th></th>
+        <th></th>
+    </tr>
+
+    @foreach (var input in db.Query("select * from EA_category_inputs where category_id=@0 order by input_order  ", category))
+    {
+        <tr>
+            <td>@input.input_title</td>
+            <td>@input.input_type</td>
+            <td>@input.input_default</td>
+            <td>@input.input_order</td>
+            <td><a href="index.cshtml?cat=@category&edit=@input.id" class="btn btn-primary">تعديل</a></td>
+            <td><a href="index.cshtml?cat=@category&del=@input.id" class="btn btn-primary">حذف</a></td>
+
+        </tr>
+
+    }
+
+
+</table>

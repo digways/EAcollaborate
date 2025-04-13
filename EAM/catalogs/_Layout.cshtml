@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="~/assets/js/jquery.min.js"></script>
+    <link href="~/assets/css/ar.css" rel="stylesheet" />
+    <link href="~/assets/css/line-awesome.min.css" rel="stylesheet" />
+    <link href="~/assets/css/jquery.sheetjs.css" rel="stylesheet" />
+    <script src="~/assets/js/jquery.table2excel.min.js"></script>
+  
+
+    <title>EACollaborate</title>
+
+    @RenderSection("head", false)
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <table class="top_menu">
+                <tr>
+                    <td style="width:calc(11vw - 7px); ">
+                        <div style="width: 100%; height: 40px; background-color: #122433;"><a href="~/index"><img src="~/assets/img/logo.png" style="height:35px;" /></a></div>
+                    </td>
+                    <td style="width: 10vw;"><a href="~/EAM/landscapes/index"><i class="las la-layer-group"></i> المشاهد</a></td>
+                    <td style="width: 10vw;"><a href="~/EAM/architect/index"><i class="las la-ruler-combined"></i> تطوير البنية</a></td>
+                    <td style="width: 10vw;"><a href="~/EAM/view/index"><i class="las la-binoculars"></i> مستودع البنية</a></td>
+                    <td style="width: 10vw; background-color: #295478;"><a href="~/EAM/catalogs/index"><i class="las la-th-list"></i> الجداول</a></td>
+                    <td style="width: 10vw;"><a href="~/EAM/matrices/index"><i class="las la-table"></i> المصفوفات</a></td>
+
+                    <td style="width: 10vw;"><a href="~/EAM/reports/index"><i class="las la-chart-pie"></i> التقارير</a></td>
+                    <td style="width: 10vw;"><a href="~/EAM/diagrams/index"><i class="las la-sitemap"></i> الرسومات</a></td>
+                    <td></td>
+                    <td style="width:10vw; "><a href="~/logout"><i class="las la-power-off"></i> خروج</a></td>
+
+                </tr>
+            </table>
+           
+        </div>
+        @RenderBody()
+    </div>
+    @RenderSection("body", false)
+</body>
+</html>

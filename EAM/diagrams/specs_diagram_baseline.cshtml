@@ -1,0 +1,109 @@
+﻿@{
+
+    var db = Database.Open("EA");
+    var id = Request.QueryString["id"];
+
+    var diagram = db.QuerySingle("select * from EA_diagrams where id=@0", id);
+}
+
+<div id="description_panel" style="background-color:#fff;">
+    <table class="component_properties">
+        @*<tr>
+                <td> <label>اسم التصميم</label></td>
+                <td><input type="text" value="@diagram.title" /></td>
+            </tr>
+            <tr>
+                <td> <label>الوصف</label></td>
+                <td><input type="text" value="@diagram.description" /></td>
+            </tr>*@
+        <tr>
+            <td><label>العناصر الرئيسية</label></td>
+            <td>
+                <select id="add_diagram_component" style="width:300px;">
+                    @foreach (var item in db.Query("select id,name from ea_components where status=1 and category_id=@0 and id not in (select component_id from ea_diagrams_components where diagram_id=@1 and baseline=1 )", diagram.category_id, diagram.id))
+                    {
+                        <option value="@item.id">@item.name</option>
+                    }
+                </select>
+                <button onclick="add_component()">إضافة</button>
+            </td>
+        </tr>
+    </table>
+    <div style="width:100%;overflow-x:scroll;">
+        <table class="component_properties">
+            @foreach (var component in db.Query("select ea_components.name,ea_diagrams_components.id,ea_diagrams_components.component_id from ea_diagrams_components inner join ea_components on ea_diagrams_components.component_id = ea_components.id where ea_diagrams_components.diagram_id=@0 and baseline=1", id))
+            {
+                <tr>
+                    <td style="vertical-align: top; white-space: nowrap; border-left: 1px solid #000;"><button onclick="del_component(@component.id)"><i class="las la-trash"></i></button></td>
+                    <td style="vertical-align: top; white-space: nowrap; border-left: 1px solid #000;background-color:#585a5d;color:#fff;">@component.name</td>
+                    @foreach (var cat_relation in db.Query("select * from ea_categories_relations where category1=@0 ", diagram.category_id))
+                    {
+                        <td style="vertical-align: top; white-space: nowrap;border-left:1px solid #000;">
+                            <h4>@cat_relation.category1_title</h4>
+                            <table>
+                                @foreach (var comp2 in db.Query("select ea_components_relations.id,component2,ea_components.name from ea_components_relations inner join ea_components on ea_components_relations.component2=ea_components.id where categories_relation_id=@0 and component1=@1  and ea_components_relations.status=1", cat_relation.id, component.component_id))
+                                {
+                                    var diagram_relation = db.QuerySingle("select * from EA_diagrams_relations_baseline where diagram_component_id=@0 and components_relation_id=@1",component.id, comp2.id);
+                                    
+                                    <tr><td><input type="checkbox" onclick="add_relation(this,@component.id,@comp2.id)" @if (diagram_relation!=null) {<text>checked</text> } /></td><td>@comp2.name</td></tr>
+                                }
+                            </table>
+                        </td>
+                    }
+                    @foreach (var cat_relation in db.Query("select * from ea_categories_relations where category2=@0 ", diagram.category_id))
+                    {
+                        <td style="vertical-align: top; white-space: nowrap; border-left: 1px solid #000;">
+                            <h4>@cat_relation.category2_title</h4>
+                            <table>
+                                @foreach (var comp1 in db.Query("select ea_components_relations.id,component1,ea_components.name from ea_components_relations inner join ea_components on ea_components_relations.component1=ea_components.id where categories_relation_id=@0 and component2=@1 and ea_components_relations.status=1", cat_relation.id, component.component_id))
+                                {
+                                    var diagram_relation = db.QuerySingle("select * from EA_diagrams_relations_baseline where diagram_component_id=@0 and components_relation_id=@1", component.id, comp1.id);
+
+                                    <tr><td><input type="checkbox"  onclick="add_relation(this,@component.id,@comp1.id)" @if (diagram_relation!=null) {<text>checked</text> } /></td><td>@comp1.name</td></tr>
+                                }
+                            </table>
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+    </div>
+</div>
+<script>
+    function add_component() {
+         $.post("add_del_baseline_component.cshtml?id=@id",
+            {
+                "component": document.getElementById("add_diagram_component").value
+            }).done(function () {
+                $("#panel3").load("specs_diagram_baseline.cshtml?id=@id");
+                });
+    }
+      function del_component(i) {
+         if (confirm("هل تريد تأكيد حذف العنصر نهائيا؟")) {
+
+             $.post("add_del_baseline_component.cshtml?id=@id",
+            {
+                delete_component: i+""
+                }).done(function () {
+                    $("#panel3").load("specs_diagram_baseline.cshtml?id=@id");
+
+            });
+
+        }
+    }
+    function add_relation(x,id,rel) {
+        var action = "";
+        if (x.checked == true) {
+            action = "add";
+        }
+        else {
+            action = "delete";
+        }
+       
+         $.post("add_del_baseline_relation.cshtml?id="+id,
+            {
+                "relation": rel + "",
+                action: action
+            });
+    }
+</script>

@@ -1,0 +1,145 @@
+﻿@{
+    Layout = "_Layout.cshtml";
+    var db = Database.Open("EA");
+  
+}
+<div class="panel1">
+    <div class="content">
+
+        <br />
+        @foreach (var group in db.Query("select * from ea_groups where id in (5) order by group_order asc "))
+        {
+            <button class="accordion" id="b_@(group.id)_baseline">&nbsp;<i class="las @group.icon"></i>&nbsp; @group.group_name</button>
+            <div class="accordion_panel">
+                <ul>
+                    @foreach (var cat in db.Query("select id,title,title_en from ea_categories where menu=@0 and parent=0  order by list_order asc", group.id))
+                    {
+                        <li><a href="#" id="mainlink-@cat.id-baseline" class="main-link" onclick="getComponents_baseline(@cat.id,@group.id)">- @cat.title</a></li>
+                    }
+                </ul>
+            </div>
+
+        }
+        <hr />
+
+        <h2 style="text-align:center;width:100%;color:#d9efff;">الوضع الحالي</h2>
+
+        @foreach (var group in db.Query("select * from ea_groups where id in (1,2,3,4) order by group_order asc "))
+        {
+            <button class="accordion" id="b_@(group.id)_baseline">&nbsp;<i class="las @group.icon"></i>&nbsp; @group.group_name</button>
+            <div class="accordion_panel">
+                <ul>
+                    @foreach (var cat in db.Query("select id,title,title_en from ea_categories where menu=@0 and parent=0  order by list_order asc", group.id))
+                    {
+                        <li><a href="#" id="mainlink-@cat.id-baseline" class="main-link" onclick="getComponents_baseline(@cat.id,@group.id)">- @cat.title</a></li>
+                    }
+                </ul>
+            </div>
+
+        }
+        <hr />
+        <br />
+        <h2 style="text-align: center; width: 100%; color: #d9efff;">الوضع المستهدف</h2>
+
+        @foreach (var group in db.Query("select * from ea_groups where id in (1,2,3,4) order by group_order asc "))
+        {
+            <button class="accordion" id="b_@(group.id)_target">&nbsp;<i class="las @group.icon"></i>&nbsp; @group.group_name</button>
+            <div class="accordion_panel">
+                <ul>
+                    @foreach (var cat in db.Query("select id,title,title_en from ea_categories where menu=@0 and parent=0  order by list_order asc", group.id))
+                    {
+                        <li><a href="#" id="mainlink-@cat.id-target" class="main-link" onclick="getComponents_target(@cat.id,@group.id)">- @cat.title</a></li>
+                    }
+                </ul>
+            </div>
+
+        }
+        <hr />
+
+        @foreach (var group in db.Query("select * from ea_groups where id in (6) order by group_order asc "))
+        {
+            <button class="accordion" id="b_@(group.id)_target">&nbsp;<i class="las @group.icon"></i>&nbsp; @group.group_name</button>
+            <div class="accordion_panel">
+                <ul>
+                    @foreach (var cat in db.Query("select id,title,title_en from ea_categories where menu=@0 and parent=0  order by list_order asc", group.id))
+                    {
+                        <li><a href="#" id="mainlink-@cat.id-target" class="main-link" onclick="getComponents_target(@cat.id,@group.id)">- @cat.title</a></li>
+                    }
+                </ul>
+            </div>
+
+        }
+
+
+
+
+
+    </div>
+</div>
+<div class="panel4">
+    <div class="content_panel4" id="panel4">
+        <h3>الوضع الحالي</h3>
+        <div style="display:block;clear:both;margin:auto;">
+            @foreach (var cat_info in db.Query("select * from ea_categories where menu in(1,2,3,4)"))
+            {
+                var count = db.QueryValue("select count(*) from ea_components where category_id=@0 and status=1", cat_info.id);
+
+               <a href="#" onclick="getComponents_baseline(@cat_info.id,@cat_info.menu)"> <div class="DItem DItem2" style="background-color:@cat_info.bg_color;border-radius:@(cat_info.corner)px;vertical-align:middle;"><span style="margin-right:30px;font-weight:bold;line-height:20px;">@cat_info.title </span><img style="position:absolute;top:2px;right:2px;width:25px;height:25px;" src="/assets/icons/@(cat_info.id).svg" /><span style="position:absolute;top:33px;right:10px;font-weight:bold;color:#4e4f51;"> @count</span></div></a>
+            }
+        </div>
+        <br />
+        <hr />
+        <h3>الوضع المستهدف</h3>
+        <div style="display:block;clear:both;margin:auto;">
+            @foreach (var cat_info in db.Query("select * from ea_categories where menu in(1,2,3,4)"))
+            {
+                var count = db.QueryValue("select count(*) from ea_components where category_id=@0 and target!=6", cat_info.id);
+
+                <a href="#" onclick="getComponents_target(@cat_info.id,@cat_info.menu)">  <div class="DItem DItem2" style="background-color:@cat_info.bg_color;border-radius:@(cat_info.corner)px;vertical-align:middle;"><span style="margin-right:30px;font-weight:bold;line-height:20px;">@cat_info.title </span><img style="position:absolute;top:2px;right:2px;width:25px;height:25px;" src="/assets/icons/@(cat_info.id).svg" /><span style="position:absolute;top:33px;right:10px;font-weight:bold;color:#4e4f51;"> @count</span></div></a>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+
+    function getComponents_baseline(id,i) {
+        
+        $("#panel4").load("baseline.cshtml?cat=" + id);
+        $(".accordion").removeClass("active");
+        $("#b_" + i + "_baseline").addClass("active");
+        $(".main-link").removeClass("main-link-active");
+        $("#mainlink-" + id +"-baseline").addClass("main-link-active");
+
+
+    }
+    function getComponents_target(id,i) {
+
+        $("#panel4").load("target.cshtml?cat=" + id);
+        $(".accordion").removeClass("active");
+        $("#b_" + i + "_target").addClass("active");
+        $(".main-link").removeClass("main-link-active");
+        $("#mainlink-" + id+"-target").addClass("main-link-active");
+
+    }
+   
+  
+
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+
+        acc[i].addEventListener("click", function () {
+            $(".accordion").removeClass("active");
+            this.classList.add("active");
+        });
+    }
+
+</script>
+
+
+
+@{
+    db.Close();
+}

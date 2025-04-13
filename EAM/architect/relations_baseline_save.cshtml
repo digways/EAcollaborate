@@ -1,0 +1,61 @@
+﻿@{
+
+    var db = Database.Open("EA");
+
+
+    if (IsPost)
+    {
+        if (!Request.Form["component1"].IsEmpty() && !Request.Form["component2"].IsEmpty())
+        {
+            if (Request.Form["action"] == "add")
+            {
+                db.Execute("delete from EA_components_relations where component1=@0 and component2=@1 and categories_relation_id=@2", Request.Form["component1"], Request.Form["component2"], Request.Form["cat_rel_id"]);
+
+                db.Execute("insert into EA_components_relations (component1,component2,description,status,target,categories_relation_id) values (@0,@1,@2,1,1,@3)", Request.Form["component1"], Request.Form["component2"], "", Request.Form["cat_rel_id"]);
+
+            }
+            else if (Request.Form["action"] == "delete")
+            {
+                db.Execute("delete from EA_components_relations where component1=@0 and component2=@1 and categories_relation_id=@2", Request.Form["component1"], Request.Form["component2"], Request.Form["cat_rel_id"]);
+
+            }
+            else if (Request.Form["action"] == "update")
+            {
+                db.Execute("update EA_components_relations set description=@0 where component1=@1 and component2=@2 and  categories_relation_id=@3", Request.Form["relation_desc"], Request.Form["component1"], Request.Form["component2"], Request.Form["cat_rel_id"]);
+
+            }
+            else if (Request.Form["action"] == "delete_select1")
+            {
+                db.Execute("delete from EA_components_relations where component1=@0 and  categories_relation_id=@1", Request.Form["component1"], Request.Form["cat_rel_id"]);
+
+            }
+            else if (Request.Form["action"] == "delete_select2")
+            {
+                db.Execute("delete from EA_components_relations where component2=@0 and  categories_relation_id=@1", Request.Form["component2"], Request.Form["cat_rel_id"]);
+
+            }
+            else if (Request.Form["action"] == "add_select1")
+            {
+                db.Execute("delete from EA_components_relations where component1=@0  and categories_relation_id=@1", Request.Form["component1"], Request.Form["cat_rel_id"]);
+
+                db.Execute("insert into EA_components_relations (component1,component2,description,status,target,categories_relation_id) values (@0,@1,@2,1,1,@3)", Request.Form["component1"], Request.Form["component2"], "", Request.Form["cat_rel_id"]);
+
+            }
+            else if (Request.Form["action"] == "add_select2")
+            {
+                db.Execute("delete from EA_components_relations where component2=@0  and categories_relation_id=@1", Request.Form["component2"], Request.Form["cat_rel_id"]);
+
+                db.Execute("insert into EA_components_relations (component1,component2,description,status,target,categories_relation_id) values (@0,@1,@2,1,1,@3)", Request.Form["component1"], Request.Form["component2"], "", Request.Form["cat_rel_id"]);
+
+            }
+            else
+                    {
+
+                    }
+            db.Close();
+
+        }
+
+    }
+
+}

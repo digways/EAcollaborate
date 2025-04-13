@@ -1,0 +1,30 @@
+﻿@{
+
+    var db = Database.Open("EA");
+    var category = Request.QueryString["cat"];
+    var i = 0;
+
+    if (IsPost)
+    {
+
+        if(!Request.Form["target_component"].IsEmpty())
+        {
+            db.Execute("insert into EA_components (name,category_id,status,target,parent) values (@0,@1,0,2,0)", Request.Form["target_component"], category);
+            i = int.Parse(db.GetLastInsertId().ToString());
+            foreach (var input in db.Query("select * from EA_category_inputs where category_id=@0 order by input_order", category))
+            {
+                db.Execute("delete from EA_components_specs where component_id=@0 and input_id=@1", i, input.id);
+                db.Execute("insert into EA_components_specs (component_id,input_id,input_value,userid,input_value_target) values (@0,@1,@2,@3,@2)", i, input.id, "", Session["user"]);
+
+            }
+        }
+        if(!Request.Form["delete_component"].IsEmpty())
+        {
+            db.Execute("delete from EA_components_relations where component1=@0", Request.Form["delete_component"]);
+            db.Execute("delete from EA_components_relations where component2=@0", Request.Form["delete_component"]);
+            db.Execute("delete from EA_components_specs where component_id=@0", Request.Form["delete_component"]);
+            db.Execute("delete from EA_components where id=@0", Request.Form["delete_component"]);
+        }
+        db.Close();
+    }
+}@i

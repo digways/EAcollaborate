@@ -1,0 +1,40 @@
+﻿@{
+
+    var db = Database.Open("EA");
+
+
+    if (IsPost)
+    {
+
+        if (!Request.Form["component"].IsEmpty())
+        {
+            if(db.QuerySingle("select * from EA_diagrams_components where diagram_id=@0 and component_id=@1", Request.QueryString["id"], Request.Form["component"])!=null)
+            {
+                db.Execute("update EA_diagrams_components set target=1 where diagram_id=@0 and component_id=@1", Request.QueryString["id"], Request.Form["component"]);
+            }
+            else
+            {
+                db.Execute("insert into EA_diagrams_components (diagram_id,component_id,baseline,target) values (@0,@1,0,1)", Request.QueryString["id"], Request.Form["component"]);
+
+            }
+          
+        }
+        if (!Request.Form["delete_component"].IsEmpty())
+        {
+
+            if (db.QueryValue("select baseline from EA_diagrams_components where id=@0", Request.Form["delete_component"]) == false)
+            {
+                db.Execute("delete from EA_diagrams_components where id=@0", Request.Form["delete_component"]);
+                db.Execute("delete from EA_diagrams_relations_target where diagram_component_id=@0", Request.Form["delete_component"]);
+            }
+            else
+            {
+                db.Execute("update EA_diagrams_components set target=0 where id=@0", Request.Form["delete_component"]);
+                db.Execute("delete from EA_diagrams_relations_target where diagram_component_id=@0", Request.Form["delete_component"]);
+
+            }
+
+        }
+        db.Close();
+    }
+}
